@@ -1,0 +1,36 @@
+plugins {
+    id 'application'
+}
+
+group 'com.css'
+version '1.0'
+
+apply plugin: "java"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // https://picocli.info/
+    implementation 'info.picocli:picocli:4.7.0'
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.4.2'
+    // https://github.com/simple-http/simple-http
+    implementation 'com.simple-http:simple-http:1.4'
+    implementation 'org.slf4j:slf4j-jdk14:2.0.3'
+}
+
+ext {
+    javaMainClass = "com.css.challenge.Main"
+}
+
+application {
+    mainClass.set(javaMainClass)
+}
