@@ -25,6 +25,12 @@ dependencies {
     // https://github.com/simple-http/simple-http
     implementation 'com.simple-http:simple-http:1.4'
     implementation 'org.slf4j:slf4j-jdk14:2.0.3'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 ext {

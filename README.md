@@ -1,6 +1,6 @@
 # README
 
-Author: `<your name here>`
+Author: `Milo Cardenas`
 
 ## How to run
 
@@ -19,4 +19,4 @@ $ ./gradlew run --args="--auth=<token>"
 
 ## Discard criteria
 
-`<your chosen discard criteria and rationale here>`
+`Stored orders are sorted by freshness and discarded based on the least fresh order in the shelf storage, for O(n log n.A PriorityQueue could've been used to achive O(log n) selection, but opted for using a List for simplicity and to avoid staleness when picking up or moving orders`

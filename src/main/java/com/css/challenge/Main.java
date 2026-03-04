@@ -1,14 +1,12 @@
 package com.css.challenge;
 
-import com.css.challenge.client.Action;
 import com.css.challenge.client.Client;
 import com.css.challenge.client.Order;
 import com.css.challenge.client.Problem;
 import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,26 +44,57 @@ public class Main implements Runnable {
   @Option(names = "--max", description = "Maximum pickup time")
   Duration max = Duration.ofSeconds(8);
 
+  @Option(names = "--coolers", description = "Number of cooler storage spaces")
+  int coolerCapacity = 6;
+
+  @Option(names = "--heaters", description = "Number of heater storage spaces")
+  int heaterCapacity = 6;
+
+  @Option(names = "--shelves", description = "Number of shelf storage spaces")
+  int shelfCapacity = 12;
+
   @Override
   public void run() {
     try {
       Client client = new Client(endpoint, auth);
       Problem problem = client.newProblem(name, seed);
+      List<Order> orders = problem.getOrders();
+
+      LOGGER.info("Received {} orders", orders.size());
 
       // ------ Execution harness logic goes here using rate, min and max ----
 
-      List<Action> actions = new ArrayList<>();
-      for (Order order : problem.getOrders()) {
-        LOGGER.info("Received: {}", order);
+      Kitchen kitchen = new Kitchen(coolerCapacity, heaterCapacity, shelfCapacity);
+      ScheduledExecutorService pickupExecutor = Executors.newScheduledThreadPool(12);
+      ThreadLocalRandom random = ThreadLocalRandom.current();
+      CountDownLatch allPickups = new CountDownLatch(orders.size());
 
-        actions.add(new Action(Instant.now(), order.getId(), Action.PLACE, Action.COOLER));
+      // Place orders one by one at the configured rate.
+      // After each placement, schedule a pickup at a random delay within [min, max].
+      for (Order order : orders) {
+        kitchen.placeOrder(order);
+
+        long delayMs = random.nextLong(min.toMillis(), max.toMillis());
+        pickupExecutor.schedule(() -> {
+          try {
+            kitchen.pickup(order.getId());
+          } finally {
+            allPickups.countDown();
+          }
+        }, delayMs, TimeUnit.MILLISECONDS);
+
         Thread.sleep(rate.toMillis());
       }
 
+      // Wait for all scheduled pickups to complete
+      allPickups.await();
+      pickupExecutor.shutdown();
+
       // ----------------------------------------------------------------------
 
-      String result = client.solveProblem(problem.getTestId(), rate, min, max, actions);
+      String result = client.solveProblem(problem.getTestId(), rate, min, max, kitchen.get_actions());
       LOGGER.info("Result: {}", result);
+      System.out.println(kitchen.get_actions());
 
     } catch (IOException | InterruptedException e) {
       LOGGER.error("Simulation failed: {}", e.getMessage());
